@@ -1,6 +1,40 @@
 const myImage = new Image();
 myImage.src = "./bestPicture2.jpg";
 
+const bgMusic = document.getElementById("bgMusic");
+const musicToggle = document.getElementById("musicToggle");
+
+function setMusicPlaying(isPlaying) {
+  musicToggle.classList.toggle("is-muted", !isPlaying);
+  musicToggle.setAttribute("aria-label", isPlaying ? "Выключить музыку" : "Включить музыку");
+}
+
+async function playMusic() {
+  if (!bgMusic) return;
+  try {
+    await bgMusic.play();
+    setMusicPlaying(true);
+  } catch {
+    setMusicPlaying(false);
+  }
+}
+
+function pauseMusic() {
+  if (!bgMusic) return;
+  bgMusic.pause();
+  setMusicPlaying(false);
+}
+
+if (musicToggle && bgMusic) {
+  musicToggle.addEventListener("click", () => {
+    if (bgMusic.paused) {
+      playMusic();
+    } else {
+      pauseMusic();
+    }
+  });
+}
+
 const SILHOUETTE_BRIGHTNESS_MIN = 0.40;
 const MOUSE_RADIUS = 180;
 const MOUSE_FORCE = 2.5;

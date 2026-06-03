@@ -1,1 +1,1 @@
-https://lolmeduza.github.io/animationWithoutPicture/
+https://lolmeduza.github.io/bestAnimation/
