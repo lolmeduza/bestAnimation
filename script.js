@@ -2,9 +2,9 @@ const myImage = new Image();
 myImage.src = "./bestPicture2.jpg";
 
 const SILHOUETTE_BRIGHTNESS_MIN = 0.40;
-const MOUSE_RADIUS = 150;
-const MOUSE_FORCE = 2.2;
-const NUMBER_OF_PARTICLES = 4000;
+const MOUSE_RADIUS = 180;
+const MOUSE_FORCE = 2.5;
+const NUMBER_OF_PARTICLES = 4500;
 
 myImage.addEventListener("load", function () {
   const canvas = document.getElementById("canvas1");
@@ -40,7 +40,7 @@ myImage.addEventListener("load", function () {
     return (
       Math.sqrt(
         red * red * 0.299 + green * green * 0.587 + blue * blue * 0.114
-      ) / 100
+      ) / 180
     );
   }
 
@@ -90,7 +90,7 @@ myImage.addEventListener("load", function () {
 
     const force = (1 - distance / MOUSE_RADIUS) * MOUSE_FORCE;
     particle.x += (dx / distance) * force;
-    particle.y += (dy / distance) * force * 0.35;
+    particle.y += (dy / distance) * force * 0.5;
   }
 
   class Particle {
@@ -125,7 +125,7 @@ myImage.addEventListener("load", function () {
       const sample = getSampleAt(this.x, this.y);
       this.updateColorFromSample(sample);
 
-      const movement = 2.5 - this.speed + this.velocity;
+      const movement = 3 - this.speed + this.velocity;
       this.y += movement;
       applyMouseForce(this);
 
@@ -191,7 +191,7 @@ myImage.addEventListener("load", function () {
   }
 
   function drawBackgroundFade() {
-    ctx.globalAlpha = 0.06;
+    ctx.globalAlpha = 0.04;
     const gradient = ctx.createRadialGradient(
       canvas.width * 0.5,
       canvas.height * 0.45,
