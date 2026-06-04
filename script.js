@@ -236,17 +236,7 @@ myImage.addEventListener("load", function () {
 
   function drawBackgroundFade() {
     ctx.globalAlpha = 0.04;
-    const gradient = ctx.createRadialGradient(
-      canvas.width * 0.5,
-      canvas.height * 0.45,
-      0,
-      canvas.width * 0.5,
-      canvas.height * 0.5,
-      canvas.width * 0.75
-    );
-    gradient.addColorStop(0, "rgb(12, 8, 28)");
-    gradient.addColorStop(1, "rgb(0, 0, 0)");
-    ctx.fillStyle = gradient;
+    ctx.fillStyle = "rgb(0, 0, 0)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
   }
 
