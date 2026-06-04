@@ -38,7 +38,7 @@ if (musicToggle && bgMusic) {
 const SILHOUETTE_BRIGHTNESS_MIN = 0.40;
 const MOUSE_RADIUS = 140;
 const MOUSE_FORCE = 2.8;
-const NUMBER_OF_PARTICLES = 3500;
+const NUMBER_OF_PARTICLES = 4000;
 
 myImage.addEventListener("load", function () {
   const canvas = document.getElementById("canvas1");
@@ -171,7 +171,7 @@ myImage.addEventListener("load", function () {
     }
 
     draw() {
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 7;
       ctx.shadowColor = this.glowColor;
       ctx.beginPath();
       ctx.fillStyle = this.color;
