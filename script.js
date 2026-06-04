@@ -1,5 +1,5 @@
 const myImage = new Image();
-myImage.src = "./bestPicture2.jpg";
+myImage.src = "./bestPicture6.jpg";
 
 const bgMusic = document.getElementById("bgMusic");
 const musicToggle = document.getElementById("musicToggle");
@@ -37,7 +37,7 @@ if (musicToggle && bgMusic) {
 
 const SILHOUETTE_BRIGHTNESS_MIN = 0.40;
 const MOUSE_RADIUS = 180;
-const MOUSE_FORCE = 2.5;
+const MOUSE_FORCE = 2.8;
 const NUMBER_OF_PARTICLES = 4500;
 
 myImage.addEventListener("load", function () {
