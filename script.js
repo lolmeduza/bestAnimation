@@ -43,8 +43,9 @@ const NUMBER_OF_PARTICLES = 4000;
 myImage.addEventListener("load", function () {
   const canvas = document.getElementById("canvas1");
   const ctx = canvas.getContext("2d");
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
+  const canvasRect = canvas.getBoundingClientRect();
+  canvas.width = Math.max(1, Math.floor(canvasRect.width));
+  canvas.height = Math.max(1, Math.floor(canvasRect.height));
   ctx.drawImage(myImage, 0, 0, canvas.width, canvas.height);
   const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height);
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -171,7 +172,7 @@ myImage.addEventListener("load", function () {
     }
 
     draw() {
-      ctx.shadowBlur = 2;
+      ctx.shadowBlur = 5;
       ctx.shadowColor = this.glowColor;
       ctx.beginPath();
       ctx.fillStyle = this.color;
