@@ -41,6 +41,8 @@ const MOUSE_FORCE = 2.8;
 const NUMBER_OF_PARTICLES = 4000;
 const MAP_STEP = 2;
 const REVERSE_FLOW_MS = 10000;
+const SWAY_FLOW_MS = 15000;
+const RETURN_FLOW_MS = 22000;
 const FLOW_TRANSITION_MS = 3000;
 
 myImage.addEventListener("load", function () {
@@ -154,6 +156,7 @@ myImage.addEventListener("load", function () {
       this.size = Math.random() * 1.4 + 0.8;
       this.color = "rgb(0, 0, 0)";
       this.glowColor = "rgb(0, 0, 0)";
+      this.phaseOffset = Math.random() * Math.PI * 2;
     }
 
     resetPosition(fromBottom) {
@@ -172,18 +175,38 @@ myImage.addEventListener("load", function () {
       this.speed = brightness;
     }
 
-    update(flowBlend) {
+    update(motion) {
       const sample = getSampleAt(this.x, this.y);
       this.updateColorFromSample(sample);
 
       const movement = 3 - this.speed + this.velocity;
-      this.y += movement * (1 - 2 * flowBlend);
+      const verticalDir = 1 - 2 * motion.verticalBlend;
+      const verticalScale = 1 - motion.swayBlend * 0.75;
+      this.y += movement * verticalDir * verticalScale;
+
+      if (motion.swayBlend > 0) {
+        this.x +=
+          Math.sin(this.y * 0.01 + this.phaseOffset) * 1.2 * motion.swayBlend;
+        this.y +=
+          Math.cos(this.x * 0.008 + this.phaseOffset) * 0.4 * motion.swayBlend;
+      }
+
       applyMouseForce(this);
 
-      const spawnFromBottom = flowBlend >= 0.5;
-      if (this.y < 0) {
-        this.resetPosition(spawnFromBottom);
-      } else if (this.y > canvas.height) {
+      if (motion.swayBlend >= 0.5) {
+        if (
+          this.y < 0 ||
+          this.y > canvas.height ||
+          this.x < 0 ||
+          this.x > canvas.width
+        ) {
+          this.resetPosition(false);
+        }
+        return;
+      }
+
+      const spawnFromBottom = motion.verticalBlend >= 0.5;
+      if (this.y < 0 || this.y > canvas.height) {
         this.resetPosition(spawnFromBottom);
       }
       if (this.x < 0) this.x = canvas.width;
@@ -246,12 +269,37 @@ myImage.addEventListener("load", function () {
 
   const animationStart = Date.now();
 
-  function getFlowBlend() {
-    const elapsed = Date.now() - animationStart;
-    if (elapsed < REVERSE_FLOW_MS) return 0;
-
-    const t = Math.min(1, (elapsed - REVERSE_FLOW_MS) / FLOW_TRANSITION_MS);
+  function smoothstep01(value) {
+    const t = Math.min(1, Math.max(0, value));
     return t * t * (3 - 2 * t);
+  }
+
+  function getMotionState() {
+    const elapsed = Date.now() - animationStart;
+    let verticalBlend = 0;
+
+    if (elapsed >= REVERSE_FLOW_MS) {
+      verticalBlend = smoothstep01(
+        (elapsed - REVERSE_FLOW_MS) / FLOW_TRANSITION_MS
+      );
+    }
+
+    let swayBlend = 0;
+    if (elapsed >= SWAY_FLOW_MS) {
+      swayBlend = smoothstep01((elapsed - SWAY_FLOW_MS) / FLOW_TRANSITION_MS);
+    }
+
+    let returnBlend = 0;
+    if (elapsed >= RETURN_FLOW_MS) {
+      returnBlend = smoothstep01(
+        (elapsed - RETURN_FLOW_MS) / FLOW_TRANSITION_MS
+      );
+    }
+
+    return {
+      verticalBlend: verticalBlend * (1 - returnBlend),
+      swayBlend: swayBlend * (1 - returnBlend),
+    };
   }
 
   function drawBackgroundFade() {
@@ -261,11 +309,11 @@ myImage.addEventListener("load", function () {
   }
 
   function animate() {
-    const flowBlend = getFlowBlend();
+    const motion = getMotionState();
     drawBackgroundFade();
     for (let i = 0; i < particlesArray.length; i++) {
       const particle = particlesArray[i];
-      particle.update(flowBlend);
+      particle.update(motion);
       ctx.globalAlpha = 0.15 + particle.speed * 0.55;
       particle.draw();
     }
