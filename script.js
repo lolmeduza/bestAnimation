@@ -39,6 +39,7 @@ const SILHOUETTE_BRIGHTNESS_MIN = 0.40;
 const MOUSE_RADIUS = 140;
 const MOUSE_FORCE = 2.8;
 const NUMBER_OF_PARTICLES = 4000;
+const MAP_STEP = 2;
 
 myImage.addEventListener("load", function () {
   const canvas = document.getElementById("canvas1");
@@ -51,24 +52,26 @@ myImage.addEventListener("load", function () {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   const particlesArray = [];
-  const mappedImage = [];
   const silhouetteSpawnPoints = [];
   const mouse = { x: -1000, y: -1000, onCanvas: false };
+  const mapWidth = Math.ceil(canvas.width / MAP_STEP);
+  const mapHeight = Math.ceil(canvas.height / MAP_STEP);
+  const mappedImage = Array.from({ length: mapHeight }, () => Array(mapWidth));
 
-  for (let y = 0; y < canvas.height; y++) {
-    const row = [];
-    for (let x = 0; x < canvas.width; x++) {
+  for (let my = 0; my < mapHeight; my++) {
+    const y = Math.min(canvas.height - 1, my * MAP_STEP);
+    for (let mx = 0; mx < mapWidth; mx++) {
+      const x = Math.min(canvas.width - 1, mx * MAP_STEP);
       const index = (y * pixels.width + x) * 4;
       const red = pixels.data[index];
       const green = pixels.data[index + 1];
       const blue = pixels.data[index + 2];
       const brightness = calculateRelativeBrightness(red, green, blue);
-      row.push([brightness, red, green, blue]);
+      mappedImage[my][mx] = [brightness, red, green, blue];
       if (brightness > SILHOUETTE_BRIGHTNESS_MIN) {
         silhouetteSpawnPoints.push({ x, y });
       }
     }
-    mappedImage.push(row);
   }
 
   function calculateRelativeBrightness(red, green, blue) {
@@ -80,9 +83,15 @@ myImage.addEventListener("load", function () {
   }
 
   function getSampleAt(x, y) {
-    const py = Math.min(canvas.height - 1, Math.max(0, Math.floor(y)));
-    const px = Math.min(canvas.width - 1, Math.max(0, Math.floor(x)));
-    return mappedImage[py][px];
+    const mx = Math.min(
+      mapWidth - 1,
+      Math.max(0, Math.floor(x / MAP_STEP))
+    );
+    const my = Math.min(
+      mapHeight - 1,
+      Math.max(0, Math.floor(y / MAP_STEP))
+    );
+    return mappedImage[my][mx];
   }
 
   function toNeonColor(red, green, blue, brightness) {
