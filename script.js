@@ -36,9 +36,9 @@ if (musicToggle && bgMusic) {
 }
 
 const SILHOUETTE_BRIGHTNESS_MIN = 0.40;
-const MOUSE_RADIUS = 180;
+const MOUSE_RADIUS = 140;
 const MOUSE_FORCE = 2.8;
-const NUMBER_OF_PARTICLES = 4000;
+const NUMBER_OF_PARTICLES = 5000;
 
 myImage.addEventListener("load", function () {
   const canvas = document.getElementById("canvas1");
