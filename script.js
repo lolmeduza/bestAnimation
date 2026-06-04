@@ -171,7 +171,7 @@ myImage.addEventListener("load", function () {
     }
 
     draw() {
-      ctx.shadowBlur = 11;
+      ctx.shadowBlur = 2;
       ctx.shadowColor = this.glowColor;
       ctx.beginPath();
       ctx.fillStyle = this.color;
