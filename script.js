@@ -45,7 +45,9 @@ const SWAY_FLOW_MS = 15000;
 const RETURN_FLOW_MS = 22000;
 const MOMENT_FLOW_MS = 30000;
 const MOMENT_DURATION_MS = 30000;
+const RAIN_FLOW_MS = 43000;
 const FLOW_TRANSITION_MS = 3000;
+const MOMENT_TRANSITION_MS = 6000;
 
 myImage.addEventListener("load", function () {
   const canvas = document.getElementById("canvas1");
@@ -155,7 +157,8 @@ myImage.addEventListener("load", function () {
       this.y = spawn.y;
       this.speed = 0;
       this.velocity = Math.random() * 0.5;
-      this.size = Math.random() * 1.4 + 0.8;
+      this.baseSize = Math.random() * 1.4 + 0.8;
+      this.size = this.baseSize;
       this.color = "rgb(0, 0, 0)";
       this.glowColor = "rgb(0, 0, 0)";
       this.phaseOffset = Math.random() * Math.PI * 2;
@@ -181,9 +184,10 @@ myImage.addEventListener("load", function () {
       const sample = getSampleAt(this.x, this.y);
       this.updateColorFromSample(sample);
 
-      const movement = 3 - this.speed + this.velocity;
+      let movement = 3 - this.speed + this.velocity;
       const verticalDir = 1 - 2 * motion.verticalBlend;
       const verticalScale = 1 - motion.swayBlend * 0.75;
+      movement *= 1 - motion.rainBlend * 0.45;
       this.y += movement * verticalDir * verticalScale;
 
       if (motion.swayBlend > 0) {
@@ -215,12 +219,29 @@ myImage.addEventListener("load", function () {
       if (this.x > canvas.width) this.x = 0;
     }
 
-    draw() {
+    draw(motion) {
+      ctx.fillStyle = this.color;
+      ctx.beginPath();
+
+      if (motion.rainBlend > 0.15) {
+        const rain = motion.rainBlend;
+        const radius = this.baseSize * (1 + rain * 0.5);
+        ctx.ellipse(
+          this.x,
+          this.y,
+          radius * 0.35,
+          radius * (1 + rain * 1.6),
+          0,
+          0,
+          Math.PI * 2
+        );
+        ctx.fill();
+        return;
+      }
+
       ctx.shadowBlur = 5;
       ctx.shadowColor = this.glowColor;
-      ctx.beginPath();
-      ctx.fillStyle = this.color;
-      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.arc(this.x, this.y, this.baseSize, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
     }
@@ -270,11 +291,29 @@ myImage.addEventListener("load", function () {
   }
 
   const animationStart = Date.now();
-  let momentRevealDone = false;
+  let momentRevealOrder = null;
+  let momentRevealedCount = 0;
 
-  function revealParticlesOnSilhouette() {
-    for (let i = 0; i < particlesArray.length; i++) {
-      particlesArray[i].resetPosition(false);
+  function ensureMomentRevealOrder() {
+    if (momentRevealOrder) return;
+    momentRevealOrder = particlesArray.map((_, index) => index);
+    for (let i = momentRevealOrder.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const temp = momentRevealOrder[i];
+      momentRevealOrder[i] = momentRevealOrder[j];
+      momentRevealOrder[j] = temp;
+    }
+  }
+
+  function revealMomentParticlesGradually(momentBlend) {
+    if (momentBlend <= 0) return;
+
+    ensureMomentRevealOrder();
+    const targetCount = Math.floor(particlesArray.length * momentBlend);
+    while (momentRevealedCount < targetCount) {
+      const particleIndex = momentRevealOrder[momentRevealedCount];
+      particlesArray[particleIndex].resetPosition(false);
+      momentRevealedCount++;
     }
   }
 
@@ -308,33 +347,61 @@ myImage.addEventListener("load", function () {
     let momentBlend = 0;
     if (elapsed >= MOMENT_FLOW_MS) {
       const momentElapsed = elapsed - MOMENT_FLOW_MS;
-      if (momentElapsed < FLOW_TRANSITION_MS) {
-        momentBlend = smoothstep01(momentElapsed / FLOW_TRANSITION_MS);
+      if (momentElapsed < MOMENT_TRANSITION_MS) {
+        momentBlend = smoothstep01(momentElapsed / MOMENT_TRANSITION_MS);
       } else if (momentElapsed < MOMENT_DURATION_MS) {
         momentBlend = 1;
       } else if (
         momentElapsed <
-        MOMENT_DURATION_MS + FLOW_TRANSITION_MS
+        MOMENT_DURATION_MS + MOMENT_TRANSITION_MS
       ) {
         momentBlend =
           1 -
           smoothstep01(
-            (momentElapsed - MOMENT_DURATION_MS) / FLOW_TRANSITION_MS
+            (momentElapsed - MOMENT_DURATION_MS) / MOMENT_TRANSITION_MS
           );
       }
     }
 
-    const inMoment = momentBlend > 0;
+    let rainBlend = 0;
+    if (elapsed >= RAIN_FLOW_MS) {
+      const rainElapsed = elapsed - RAIN_FLOW_MS;
+      if (rainElapsed < FLOW_TRANSITION_MS) {
+        rainBlend = smoothstep01(rainElapsed / FLOW_TRANSITION_MS);
+      } else if (rainElapsed < FLOW_TRANSITION_MS * 2) {
+        rainBlend =
+          1 -
+          smoothstep01(
+            (rainElapsed - FLOW_TRANSITION_MS) / FLOW_TRANSITION_MS
+          );
+      }
+    }
+
+    const rainPhaseActive = rainBlend > 0;
+    const rainPhaseDone = elapsed >= RAIN_FLOW_MS + FLOW_TRANSITION_MS * 2;
+    if (rainPhaseDone) {
+      momentBlend = 0;
+    } else if (rainPhaseActive) {
+      momentBlend = momentBlend * (1 - rainBlend);
+    }
+
+    const inMoment = momentBlend > 0.15;
 
     return {
-      verticalBlend: inMoment ? 0 : verticalBlend * (1 - returnBlend),
-      swayBlend: inMoment ? 0 : swayBlend * (1 - returnBlend),
+      verticalBlend:
+        inMoment || rainPhaseActive
+          ? 0
+          : verticalBlend * (1 - returnBlend),
+      swayBlend:
+        inMoment || rainPhaseActive ? 0 : swayBlend * (1 - returnBlend),
       momentBlend,
+      rainBlend,
     };
   }
 
   function drawBackgroundFade(motion) {
-    const trailAlpha = 0.04 - motion.momentBlend * 0.018;
+    const trailAlpha =
+      0.04 - motion.momentBlend * 0.01 + motion.rainBlend * 0.006;
     ctx.globalAlpha = trailAlpha;
     ctx.fillStyle = "rgb(0, 0, 0)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -343,18 +410,15 @@ myImage.addEventListener("load", function () {
   function animate() {
     const motion = getMotionState();
 
-    if (motion.momentBlend > 0.4 && !momentRevealDone) {
-      momentRevealDone = true;
-      revealParticlesOnSilhouette();
-    }
+    revealMomentParticlesGradually(motion.momentBlend);
 
     drawBackgroundFade(motion);
     for (let i = 0; i < particlesArray.length; i++) {
       const particle = particlesArray[i];
       particle.update(motion);
-      const alphaBoost = 1 + motion.momentBlend * 0.2;
+      const alphaBoost = 1 + motion.momentBlend * 0.1;
       ctx.globalAlpha = (0.15 + particle.speed * 0.55) * alphaBoost;
-      particle.draw();
+      particle.draw(motion);
     }
     requestAnimationFrame(animate);
   }
